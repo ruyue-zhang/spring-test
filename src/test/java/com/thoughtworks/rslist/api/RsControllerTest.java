@@ -1,9 +1,13 @@
 package com.thoughtworks.rslist.api;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.thoughtworks.rslist.domain.Trade;
 import com.thoughtworks.rslist.dto.RsEventDto;
+import com.thoughtworks.rslist.dto.TradeDto;
 import com.thoughtworks.rslist.dto.UserDto;
 import com.thoughtworks.rslist.dto.VoteDto;
 import com.thoughtworks.rslist.repository.RsEventRepository;
+import com.thoughtworks.rslist.repository.TradeRepository;
 import com.thoughtworks.rslist.repository.UserRepository;
 import com.thoughtworks.rslist.repository.VoteRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +39,7 @@ class RsControllerTest {
   @Autowired UserRepository userRepository;
   @Autowired RsEventRepository rsEventRepository;
   @Autowired VoteRepository voteRepository;
+  @Autowired TradeRepository tradeRepository;
   private UserDto userDto;
 
   @BeforeEach
@@ -184,5 +189,33 @@ class RsControllerTest {
     List<VoteDto> voteDtos =  voteRepository.findAll();
     assertEquals(voteDtos.size(), 1);
     assertEquals(voteDtos.get(0).getNum(), 1);
+  }
+
+  @Test
+  public void shouldTradeSuccessWhenNoTradeOnThisRank() throws Exception {
+    UserDto save = userRepository.save(userDto);
+    RsEventDto rsEventDto1 = RsEventDto.builder().keyword("无分类").eventName("第一条事件").user(save).build();
+    RsEventDto rsEventDto2 = RsEventDto.builder().keyword("无分类").eventName("第二条事件").user(save).build();
+    rsEventRepository.save(rsEventDto1);
+    rsEventRepository.save(rsEventDto2);
+
+    Trade trade = Trade.builder()
+            .amount(100)
+            .rank(1)
+            .build();
+    ObjectMapper objectMapper = new ObjectMapper();
+    String tradeJson = objectMapper.writeValueAsString(trade);
+    mockMvc.perform(post("/rs/buy/{id}", rsEventDto2.getId())
+            .content(tradeJson)
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk());
+
+    RsEventDto newRsEvent = rsEventRepository.findById(rsEventDto2.getId()).get();
+    assertEquals(newRsEvent.getRank(), 1);
+    List<TradeDto> tradeDtoList =  tradeRepository.findAll();
+    assertEquals(tradeDtoList.size(), 1);
+    assertEquals(tradeDtoList.get(0).getAmount(), 100);
+    assertEquals(tradeDtoList.get(0).getRank(), 1);
+    assertEquals(tradeDtoList.get(0).getRsEvent().getEventName(), "第二条事件");
   }
 }
