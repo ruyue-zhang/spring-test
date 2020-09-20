@@ -289,4 +289,18 @@ class RsControllerTest {
     assertEquals(tradeDtoList.get(0).getRank(), 1);
     assertEquals(tradeDtoList.get(0).getRsEvent().getEventName(), "第一条事件");
   }
+
+  @Test
+  public void shouldTradeFailedWhenRsEventNotExist() throws Exception {
+    Trade trade = Trade.builder()
+            .amount(10)
+            .rank(1)
+            .build();
+    ObjectMapper objectMapper = new ObjectMapper();
+    String tradeJson = objectMapper.writeValueAsString(trade);
+    mockMvc.perform(post("/rs/buy/{id}", 5)
+            .content(tradeJson)
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isBadRequest());
+  }
 }

@@ -56,7 +56,10 @@ public class RsService {
   public void buy(Trade trade, int id) {
     TradeDto byRank = tradeRepository.findByRank(trade.getRank());
     Optional<RsEventDto> rsEventDto = rsEventRepository.findById(id);
-    if(byRank == null && rsEventDto.isPresent()) {
+    if(!rsEventDto.isPresent()) {
+      throw new RequestNotValidException("购买失败！");
+    }
+    if(byRank == null) {
       rsEventDto.get().setRank(trade.getRank());
       TradeDto tradeDto = TradeDto.builder()
               .amount(trade.getAmount())
@@ -65,7 +68,7 @@ public class RsService {
               .build();
       rsEventRepository.save(rsEventDto.get());
       tradeRepository.save(tradeDto);
-    } else if(byRank.getAmount() < trade.getAmount() && rsEventDto.isPresent()){
+    } else if(byRank.getAmount() < trade.getAmount()){
       rsEventDto.get().setRank(trade.getRank());
       TradeDto tradeDto = TradeDto.builder()
               .amount(trade.getAmount())
