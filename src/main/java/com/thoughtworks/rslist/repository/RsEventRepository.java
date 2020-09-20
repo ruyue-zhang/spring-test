@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 public interface RsEventRepository extends CrudRepository<RsEventDto, Integer> {
+  List<RsEventDto> findAllByOrderByRank();
   List<RsEventDto> findAll();
 
   @Transactional

@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -35,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class RsControllerTest {
   @Autowired private MockMvc mockMvc;
   @Autowired UserRepository userRepository;
@@ -302,5 +304,19 @@ class RsControllerTest {
             .content(tradeJson)
             .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  public void shouldGetRsEventOrderByRank() throws Exception {
+    UserDto save = userRepository.save(userDto);
+    RsEventDto rsEventDto1 = RsEventDto.builder().keyword("无分类").eventName("第一条事件").user(save).rank(3).build();
+    RsEventDto rsEventDto2 = RsEventDto.builder().keyword("无分类").eventName("第二条事件").user(save).rank(2).build();
+    RsEventDto rsEventDto3 = RsEventDto.builder().keyword("无分类").eventName("第三条事件").user(save).rank(1).build();
+    rsEventRepository.save(rsEventDto1);
+    rsEventRepository.save(rsEventDto2);
+    rsEventRepository.save(rsEventDto3);
+    mockMvc.perform(get("/rs/list"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].eventName", is("第三条事件")));
   }
 }

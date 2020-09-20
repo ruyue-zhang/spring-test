@@ -37,7 +37,7 @@ public class RsController {
   public ResponseEntity<List<RsEvent>> getRsEventListBetween(
       @RequestParam(required = false) Integer start, @RequestParam(required = false) Integer end) {
     List<RsEvent> rsEvents =
-        rsEventRepository.findAll().stream()
+        rsEventRepository.findAllByOrderByRank().stream()
             .map(
                 item ->
                     RsEvent.builder()
@@ -50,7 +50,7 @@ public class RsController {
     if (start == null || end == null) {
       return ResponseEntity.ok(rsEvents);
     }
-    return ResponseEntity.ok(rsEvents.subList(start - 1, end));
+    return ResponseEntity.ok(rsEvents);
   }
 
   @GetMapping("/rs/{index}")
