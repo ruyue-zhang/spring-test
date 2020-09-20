@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
@@ -47,6 +48,7 @@ class RsControllerTest {
     voteRepository.deleteAll();
     rsEventRepository.deleteAll();
     userRepository.deleteAll();
+    tradeRepository.deleteAll();
     userDto =
         UserDto.builder()
             .voteNum(10)
@@ -217,5 +219,41 @@ class RsControllerTest {
     assertEquals(tradeDtoList.get(0).getAmount(), 100);
     assertEquals(tradeDtoList.get(0).getRank(), 1);
     assertEquals(tradeDtoList.get(0).getRsEvent().getEventName(), "第二条事件");
+  }
+
+  @Test
+  public void shouldTradeSuccessWhenHaveTradeOnThisRankAndAmountMoreThanIt() throws Exception {
+    UserDto save = userRepository.save(userDto);
+    RsEventDto rsEventDto1 = RsEventDto.builder().keyword("无分类").eventName("第一条事件").user(save).rank(1).build();
+    RsEventDto rsEventDto2 = RsEventDto.builder().keyword("无分类").eventName("第二条事件").user(save).build();
+    rsEventRepository.save(rsEventDto1);
+    rsEventRepository.save(rsEventDto2);
+
+    TradeDto tradeDto = TradeDto.builder()
+            .amount(10)
+            .rank(1)
+            .rsEvent(rsEventDto1)
+            .build();
+    tradeRepository.save(tradeDto);
+
+    Trade trade = Trade.builder()
+            .amount(100)
+            .rank(1)
+            .build();
+    ObjectMapper objectMapper = new ObjectMapper();
+    String tradeJson = objectMapper.writeValueAsString(trade);
+    mockMvc.perform(post("/rs/buy/{id}", rsEventDto2.getId())
+            .content(tradeJson)
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk());
+
+    List<TradeDto> tradeDtoList =  tradeRepository.findAll();
+    assertEquals(tradeDtoList.size(), 1);
+    assertEquals(tradeDtoList.get(0).getAmount(), 100);
+    assertEquals(tradeDtoList.get(0).getRank(), 1);
+    assertEquals(tradeDtoList.get(0).getRsEvent().getEventName(), "第二条事件");
+    List<RsEventDto> rsEventDtoList = rsEventRepository.findAll();
+    assertEquals(rsEventDtoList.size(), 1);
+    assertEquals(rsEventDtoList.get(0).getRank(), 1);
   }
 }

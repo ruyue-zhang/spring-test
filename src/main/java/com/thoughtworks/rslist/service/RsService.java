@@ -6,6 +6,7 @@ import com.thoughtworks.rslist.dto.RsEventDto;
 import com.thoughtworks.rslist.dto.TradeDto;
 import com.thoughtworks.rslist.dto.UserDto;
 import com.thoughtworks.rslist.dto.VoteDto;
+import com.thoughtworks.rslist.exception.RequestNotValidException;
 import com.thoughtworks.rslist.repository.RsEventRepository;
 import com.thoughtworks.rslist.repository.TradeRepository;
 import com.thoughtworks.rslist.repository.UserRepository;
@@ -64,7 +65,20 @@ public class RsService {
               .build();
       rsEventRepository.save(rsEventDto.get());
       tradeRepository.save(tradeDto);
+    } else if(byRank.getAmount() < trade.getAmount() && rsEventDto.isPresent()){
+      rsEventDto.get().setRank(trade.getRank());
+      TradeDto tradeDto = TradeDto.builder()
+              .amount(trade.getAmount())
+              .rank(trade.getRank())
+              .rsEvent(rsEventDto.get())
+              .build();
+      rsEventRepository.save(rsEventDto.get());
+      tradeRepository.save(tradeDto);
+      tradeRepository.deleteAllByRsEventId(byRank.getRsEvent().getId());
+      voteRepository.deleteAllByRsEventId(byRank.getRsEvent().getId());
+      rsEventRepository.deleteById(byRank.getRsEvent().getId());
+    } else {
+      throw new RequestNotValidException("购买失败！");
     }
-
   }
 }

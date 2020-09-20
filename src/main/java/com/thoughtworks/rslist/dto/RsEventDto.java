@@ -16,7 +16,7 @@ import javax.persistence.Table;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "rsEvent")
+@Table(name = "rs_event")
 public class RsEventDto {
   @Id @GeneratedValue private int id;
   private String eventName;
