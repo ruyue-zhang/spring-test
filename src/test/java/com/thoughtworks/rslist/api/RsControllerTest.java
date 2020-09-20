@@ -256,4 +256,37 @@ class RsControllerTest {
     assertEquals(rsEventDtoList.size(), 1);
     assertEquals(rsEventDtoList.get(0).getRank(), 1);
   }
+
+  @Test
+  public void shouldTradeFailedWhenHaveTradeOnThisRankAndAmountLessThanIt() throws Exception {
+    UserDto save = userRepository.save(userDto);
+    RsEventDto rsEventDto1 = RsEventDto.builder().keyword("无分类").eventName("第一条事件").user(save).rank(1).build();
+    RsEventDto rsEventDto2 = RsEventDto.builder().keyword("无分类").eventName("第二条事件").user(save).build();
+    rsEventRepository.save(rsEventDto1);
+    rsEventRepository.save(rsEventDto2);
+
+    TradeDto tradeDto = TradeDto.builder()
+            .amount(100)
+            .rank(1)
+            .rsEvent(rsEventDto1)
+            .build();
+    tradeRepository.save(tradeDto);
+
+    Trade trade = Trade.builder()
+            .amount(10)
+            .rank(1)
+            .build();
+    ObjectMapper objectMapper = new ObjectMapper();
+    String tradeJson = objectMapper.writeValueAsString(trade);
+    mockMvc.perform(post("/rs/buy/{id}", rsEventDto2.getId())
+            .content(tradeJson)
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isBadRequest());
+
+    List<TradeDto> tradeDtoList =  tradeRepository.findAll();
+    assertEquals(tradeDtoList.size(), 1);
+    assertEquals(tradeDtoList.get(0).getAmount(), 100);
+    assertEquals(tradeDtoList.get(0).getRank(), 1);
+    assertEquals(tradeDtoList.get(0).getRsEvent().getEventName(), "第一条事件");
+  }
 }
